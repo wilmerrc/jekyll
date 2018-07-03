@@ -124,6 +124,7 @@ module Jekyll
         add_include_to_dependency(site, path, context)
 
         partial = load_cached_partial(path, context)
+        return partial if partial.is_a? String
 
         context.stack do
           context["include"] = parse_params(context) if @params
@@ -150,19 +151,23 @@ module Jekyll
         context.registers[:cached_partials] ||= {}
         cached_partial = context.registers[:cached_partials]
 
-        if cached_partial.key?(path)
-          cached_partial[path]
-        else
-          unparsed_file = context.registers[:site]
-            .liquid_renderer
-            .file(path)
-          begin
-            cached_partial[path] = unparsed_file.parse(read_file(path, context))
-          rescue Liquid::Error => e
-            e.template_name = path
-            e.markup_context = "included " if e.markup_context.nil?
-            raise e
-          end
+        return cached_partial[path] if cached_partial.key?(path)
+
+        file_contents = read_file(path, context)
+        unless Utils.has_liquid_construct? file_contents
+          cached_partial[path] = file_contents
+          return file_contents
+        end
+
+        unparsed_file = context.registers[:site]
+          .liquid_renderer
+          .file(path)
+        begin
+          cached_partial[path] = unparsed_file.parse(file_contents)
+        rescue Liquid::Error => e
+          e.template_name = path
+          e.markup_context = "included " if e.markup_context.nil?
+          raise e
         end
       end
 
