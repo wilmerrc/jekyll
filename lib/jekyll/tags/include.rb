@@ -112,6 +112,7 @@ module Jekyll
         raise IOError, could_not_locate_message(file, includes_dirs, safe)
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
       def render(context)
         site = context.registers[:site]
 
@@ -137,6 +138,7 @@ module Jekyll
           end
         end
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
 
       def add_include_to_dependency(site, path, context)
         if context.registers[:page]&.key?("path")
