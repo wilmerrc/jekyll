@@ -167,10 +167,6 @@ module Jekyll
         return cached_partial[path] if cached_partial.key?(path)
 
         file_contents = read_file(path, context)
-        unless Utils.has_liquid_construct? file_contents
-          cached_partial[path] = file_contents
-          return file_contents
-        end
 
         unparsed_file = context.registers[:site]
           .liquid_renderer
