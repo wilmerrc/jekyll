@@ -117,6 +117,8 @@ module Jekyll
       # rubocop:disable Metrics/MethodLength
       def render(context)
         site = context.registers[:site]
+
+        context.registers[:cached_partials] ||= {}
         cached_partials = context.registers[:cached_partials]
 
         file = render_variable(context) || @file
@@ -160,7 +162,6 @@ module Jekyll
       end
 
       def load_cached_partial(path, context)
-        context.registers[:cached_partials] ||= {}
         cached_partial = context.registers[:cached_partials]
 
         return cached_partial[path] if cached_partial.key?(path)
