@@ -112,9 +112,12 @@ module Jekyll
         raise IOError, could_not_locate_message(file, includes_dirs, safe)
       end
 
+      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/MethodLength
       def render(context)
         site = context.registers[:site]
+        cached_partials = context.registers[:cached_partials]
 
         file = render_variable(context) || @file
         validate_file_name(file)
@@ -127,10 +130,15 @@ module Jekyll
         partial = load_cached_partial(path, context)
         return partial if partial.is_a? String
 
-        context.stack do
-          context["include"] = parse_params(context) if @params
+        reporting_context = ReportingContext.new(
+          context.environments, context.scopes.last, context.registers
+        )
+        reporting_context.stack do
+          reporting_context["include"] = parse_params(reporting_context) if @params
           begin
-            partial.render!(context)
+            r = partial.render!(reporting_context)
+            cached_partials[path] = r if reporting_context.cachable?
+            r
           rescue Liquid::Error => e
             e.template_name = path
             e.markup_context = "included " if e.markup_context.nil?
@@ -138,7 +146,9 @@ module Jekyll
           end
         end
       end
+      # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/AbcSize
 
       def add_include_to_dependency(site, path, context)
         if context.registers[:page]&.key?("path")
